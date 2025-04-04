@@ -233,7 +233,7 @@ $total_halaman = ceil($jumlah_data / $batas);
 
 // Mengambil data untuk tabel dengan pagination
 $sql = "SELECT m.id_makanan, m.nama_makanan, k.nama_kategori, m.bahan_utama, 
-        m.waktu_persiapan, m.status_ketersediaan, h.harga, h.harga_diskon
+        m.deskripsi, m.waktu_persiapan, m.status_ketersediaan, h.harga, h.harga_diskon
         FROM makanan m
         JOIN kategori k ON m.id_kategori = k.id_kategori
         LEFT JOIN harga h ON h.jenis='makanan' AND h.id_produk=m.id_makanan
@@ -258,6 +258,30 @@ $kategori = $conn->query($sql);
     <!-- Font Awesome untuk ikon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+                .sidebar {
+            min-height: calc(100vh - 56px);
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .sidebar .nav-link {
+            padding: 10px 15px;
+            font-size: 16px;
+            color: #333;
+        }
+        .sidebar .nav-link:hover {
+            background-color: #f8f9fa;
+            color: #0d6efd;
+        }
+        .nav-link {
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+        .nav-link.active {
+            background-color: #0d6efd;
+            color: white !important;
+        }
+        .nav-link:hover:not(.active) {
+            background-color: #f8f9fa;
+        }
         .form-section {
             background-color: #f8f9fa;
             border-radius: 10px;
@@ -285,61 +309,81 @@ $kategori = $conn->query($sql);
     </style>
 </head>
 <body>
-    <div class="container-fluid mt-4">
-        <!-- Navbar -->
-         
-    <!-- Top Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
         <div class="container-fluid">
-            <a class="navbar-brand" href="index.php">Admin Panel</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
+            <a class="navbar-brand" href="index.php">
+                <i class="bi bi-cup-hot-fill me-2"></i>
+                Restoran Dashboard
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link <?php echo $page == 'dashboard' ? 'active' : ''; ?>" href="index.php?page=dashboard">
-                            <i class="fas fa-tachometer-alt me-1"></i> Dashboard
+                        <a class="nav-link active" href="index.php">
+                            <i class="bi bi-speedometer2 me-1"></i> Dashboard
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link <?php echo $page == 'food' ? 'active' : ''; ?>" href="index.php?page=food">
-                            <i class="fas fa-utensils me-1"></i> Food
+                        <a class="nav-link" href="orders.php">
+                            <i class="bi bi-cart-fill me-1"></i> Pemesanan
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link <?php echo $page == 'drinks' ? 'active' : ''; ?>" href="index.php?page=drinks">
-                            <i class="fas fa-glass-martini me-1"></i> Drinks
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle me-1"></i> Admin
                         </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link <?php echo $page == 'pricing' ? 'active' : ''; ?>" href="index.php?page=pricing">
-                            <i class="fas fa-tag me-1"></i> Pricing
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link <?php echo $page == 'reports' ? 'active' : ''; ?>" href="index.php?page=reports">
-                            <i class="fas fa-chart-bar me-1"></i> Reports
-                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-1"></i> Pengaturan</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-box-arrow-right me-1"></i> Logout</a></li>
+                        </ul>
                     </li>
                 </ul>
-                <div class="d-flex align-items-center">
-                    <div class="dropdown">
-                        <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
-                            <img src="https://via.placeholder.com/32" alt="Admin" width="32" height="32" class="rounded-circle me-2">
-                            <span>Admin</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="dropdownUser1">
-                            <li><a class="dropdown-item" href="settings.php">Settings</a></li>
-                            <li><a class="dropdown-item" href="profile.php">Profile</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="logout.php">Sign out</a></li>
-                        </ul>
-                    </div>
-                </div>
             </div>
         </div>
     </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-lg-2 bg-light sidebar p-3">
+                <div class="d-flex flex-column">
+                    <ul class="nav nav-pills flex-column">
+                        <li class="nav-item">
+                            <a href="dashboard.php" class="nav-link text-dark active">
+                                <i class="bi bi-house-door me-2"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="food.php" class="nav-link text-dark">
+                                <i class="bi bi-egg-fried me-2"></i> Makanan
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href=drink.php" class="nav-link text-dark">
+                                <i class="bi bi-cup-straw me-2"></i> Minuman
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="prices.php" class="nav-link text-dark">
+                                <i class="bi bi-tags me-2"></i> Harga
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="orders.php" class="nav-link text-dark">
+                                <i class="bi bi-cart me-2"></i> Pemesanan
+                            </a>
+                        </li>
+                    </ul>
+                    <hr>
+      
+                </div>
+            </div>
+    <div class="container-fluid mt-4">
+      
         <!-- Main Content -->
         <div class="row">
             <div class="col-md-12">
@@ -453,67 +497,68 @@ $kategori = $conn->query($sql);
                     </div>
                     
                     <div class="table-responsive">
-                        <table class="table table-striped table-hover">
-                            <thead>
-                                <tr>
-                                    <th>No</th>
-                                    <th>Nama Makanan</th>
-                                    <th>Kategori</th>
-                                    <th>Bahan Utama</th>
-                                    <th>Deskripsi</th>
-                                    <th>Waktu</th>
-                                    <th>Harga</th>
-                                    <th>Status</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php 
-                                $no = $halaman_awal + 1;
-                                if($data_makanan->num_rows > 0):
-                                    while($row = $data_makanan->fetch_assoc()): 
-                                ?>
-                                <tr>
-                                    <td><?php echo $no++; ?></td>
-                                    <td><?php echo $row['nama_makanan']; ?></td>
-                                    <td><?php echo $row['nama_kategori']; ?></td>
-                                    <td><?php echo $row['bahan_utama']; ?></td>
-                                    <td><?php echo $row['waktu_persiapan']; ?> menit</td>
-                                    <td>
-                                        <?php if($row['harga_diskon']): ?>
-                                            <span class="price-discount">Rp <?php echo number_format($row['harga'], 0, ',', '.'); ?></span><br>
-                                            Rp <?php echo number_format($row['harga_diskon'], 0, ',', '.'); ?>
-                                        <?php else: ?>
-                                            Rp <?php echo number_format($row['harga'], 0, ',', '.'); ?>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <?php if($row['status_ketersediaan']): ?>
-                                            <span class="badge badge-available">Tersedia</span>
-                                        <?php else: ?>
-                                            <span class="badge badge-unavailable">Tidak Tersedia</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <a href="?aksi=edit&id=<?php echo $row['id_makanan']; ?>" class="btn btn-sm btn-warning">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <a href="?aksi=hapus&id=<?php echo $row['id_makanan']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Yakin ingin menghapus data ini?')">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                    </td>
-                                </tr>
-                                <?php 
-                                    endwhile; 
-                                else: 
-                                ?>
-                                <tr>
-                                    <td colspan="8" class="text-center">Tidak ada data</td>
-                                </tr>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
-                    </div>
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>Nama Makanan</th>
+                <th>Kategori</th>
+                <th>Bahan Utama</th>
+                <th>Deskripsi</th>
+                <th>Waktu</th>
+                <th>Harga</th>
+                <th>Status</th>
+                <th>Aksi</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php 
+            $no = $halaman_awal + 1;
+            if($data_makanan->num_rows > 0):
+                while($row = $data_makanan->fetch_assoc()): 
+            ?>
+            <tr>
+                <td><?php echo $no++; ?></td>
+                <td><?php echo $row['nama_makanan']; ?></td>
+                <td><?php echo $row['nama_kategori']; ?></td>
+                <td><?php echo $row['bahan_utama']; ?></td>
+                <td><?php echo !empty($row['deskripsi']) ? (strlen($row['deskripsi']) > 50 ? substr($row['deskripsi'], 0, 50).'...' : $row['deskripsi']) : '-'; ?></td>
+                <td><?php echo $row['waktu_persiapan']; ?> menit</td>
+                <td>
+                    <?php if($row['harga_diskon']): ?>
+                        <span class="price-discount">Rp <?php echo number_format($row['harga'], 0, ',', '.'); ?></span><br>
+                        Rp <?php echo number_format($row['harga_diskon'], 0, ',', '.'); ?>
+                    <?php else: ?>
+                        Rp <?php echo number_format($row['harga'], 0, ',', '.'); ?>
+                    <?php endif; ?>
+                </td>
+                <td>
+                    <?php if($row['status_ketersediaan']): ?>
+                        <span class="badge badge-available">Tersedia</span>
+                    <?php else: ?>
+                        <span class="badge badge-unavailable">Tidak Tersedia</span>
+                    <?php endif; ?>
+                </td>
+                <td>
+                    <a href="?aksi=edit&id=<?php echo $row['id_makanan']; ?>" class="btn btn-sm btn-warning">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="?aksi=hapus&id=<?php echo $row['id_makanan']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Yakin ingin menghapus data ini?')">
+                        <i class="fas fa-trash"></i>
+                    </a>
+                </td>
+            </tr>
+            <?php 
+                endwhile; 
+            else: 
+            ?>
+            <tr>
+                <td colspan="9" class="text-center">Tidak ada data</td>
+            </tr>
+            <?php endif; ?>
+        </tbody>
+    </table>
+</div>
                     
                     <!-- Pagination -->
                     <nav aria-label="Page navigation">
