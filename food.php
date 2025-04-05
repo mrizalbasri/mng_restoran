@@ -246,7 +246,6 @@ $data_makanan = $conn->query($sql);
 $sql = "SELECT id_kategori, nama_kategori FROM kategori WHERE jenis='makanan' ORDER BY nama_kategori";
 $kategori = $conn->query($sql);
 ?>
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -257,8 +256,10 @@ $kategori = $conn->query($sql);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome untuk ikon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
-                .sidebar {
+        .sidebar {
             min-height: calc(100vh - 56px);
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
@@ -353,17 +354,17 @@ $kategori = $conn->query($sql);
                 <div class="d-flex flex-column">
                     <ul class="nav nav-pills flex-column">
                         <li class="nav-item">
-                            <a href="dashboard.php" class="nav-link text-dark active">
+                            <a href="dashboard.php" class="nav-link text-dark">
                                 <i class="bi bi-house-door me-2"></i> Dashboard
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="food.php" class="nav-link text-dark">
+                            <a href="food.php" class="nav-link text-dark active">
                                 <i class="bi bi-egg-fried me-2"></i> Makanan
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href=drink.php" class="nav-link text-dark">
+                            <a href="drink.php" class="nav-link text-dark">
                                 <i class="bi bi-cup-straw me-2"></i> Minuman
                             </a>
                         </li>
@@ -379,14 +380,11 @@ $kategori = $conn->query($sql);
                         </li>
                     </ul>
                     <hr>
-      
                 </div>
             </div>
-    <div class="container-fluid mt-4">
-      
-        <!-- Main Content -->
-        <div class="row">
-            <div class="col-md-12">
+            
+            <!-- Main Content -->
+            <div class="col-lg-10 px-4 py-3">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2>Manajemen Menu Makanan</h2>
                 </div>
@@ -497,68 +495,68 @@ $kategori = $conn->query($sql);
                     </div>
                     
                     <div class="table-responsive">
-    <table class="table table-striped table-hover">
-        <thead>
-            <tr>
-                <th>No</th>
-                <th>Nama Makanan</th>
-                <th>Kategori</th>
-                <th>Bahan Utama</th>
-                <th>Deskripsi</th>
-                <th>Waktu</th>
-                <th>Harga</th>
-                <th>Status</th>
-                <th>Aksi</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php 
-            $no = $halaman_awal + 1;
-            if($data_makanan->num_rows > 0):
-                while($row = $data_makanan->fetch_assoc()): 
-            ?>
-            <tr>
-                <td><?php echo $no++; ?></td>
-                <td><?php echo $row['nama_makanan']; ?></td>
-                <td><?php echo $row['nama_kategori']; ?></td>
-                <td><?php echo $row['bahan_utama']; ?></td>
-                <td><?php echo !empty($row['deskripsi']) ? (strlen($row['deskripsi']) > 50 ? substr($row['deskripsi'], 0, 50).'...' : $row['deskripsi']) : '-'; ?></td>
-                <td><?php echo $row['waktu_persiapan']; ?> menit</td>
-                <td>
-                    <?php if($row['harga_diskon']): ?>
-                        <span class="price-discount">Rp <?php echo number_format($row['harga'], 0, ',', '.'); ?></span><br>
-                        Rp <?php echo number_format($row['harga_diskon'], 0, ',', '.'); ?>
-                    <?php else: ?>
-                        Rp <?php echo number_format($row['harga'], 0, ',', '.'); ?>
-                    <?php endif; ?>
-                </td>
-                <td>
-                    <?php if($row['status_ketersediaan']): ?>
-                        <span class="badge badge-available">Tersedia</span>
-                    <?php else: ?>
-                        <span class="badge badge-unavailable">Tidak Tersedia</span>
-                    <?php endif; ?>
-                </td>
-                <td>
-                    <a href="?aksi=edit&id=<?php echo $row['id_makanan']; ?>" class="btn btn-sm btn-warning">
-                        <i class="fas fa-edit"></i>
-                    </a>
-                    <a href="?aksi=hapus&id=<?php echo $row['id_makanan']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Yakin ingin menghapus data ini?')">
-                        <i class="fas fa-trash"></i>
-                    </a>
-                </td>
-            </tr>
-            <?php 
-                endwhile; 
-            else: 
-            ?>
-            <tr>
-                <td colspan="9" class="text-center">Tidak ada data</td>
-            </tr>
-            <?php endif; ?>
-        </tbody>
-    </table>
-</div>
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Nama Makanan</th>
+                                    <th>Kategori</th>
+                                    <th>Bahan Utama</th>
+                                    <th>Deskripsi</th>
+                                    <th>Waktu</th>
+                                    <th>Harga</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php 
+                                $no = $halaman_awal + 1;
+                                if($data_makanan->num_rows > 0):
+                                    while($row = $data_makanan->fetch_assoc()): 
+                                ?>
+                                <tr>
+                                    <td><?php echo $no++; ?></td>
+                                    <td><?php echo $row['nama_makanan']; ?></td>
+                                    <td><?php echo $row['nama_kategori']; ?></td>
+                                    <td><?php echo $row['bahan_utama']; ?></td>
+                                    <td><?php echo !empty($row['deskripsi']) ? (strlen($row['deskripsi']) > 50 ? substr($row['deskripsi'], 0, 50).'...' : $row['deskripsi']) : '-'; ?></td>
+                                    <td><?php echo $row['waktu_persiapan']; ?> menit</td>
+                                    <td>
+                                        <?php if($row['harga_diskon']): ?>
+                                            <span class="price-discount">Rp <?php echo number_format($row['harga'], 0, ',', '.'); ?></span><br>
+                                            Rp <?php echo number_format($row['harga_diskon'], 0, ',', '.'); ?>
+                                        <?php else: ?>
+                                            Rp <?php echo number_format($row['harga'], 0, ',', '.'); ?>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if($row['status_ketersediaan']): ?>
+                                            <span class="badge badge-available">Tersedia</span>
+                                        <?php else: ?>
+                                            <span class="badge badge-unavailable">Tidak Tersedia</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <a href="?aksi=edit&id=<?php echo $row['id_makanan']; ?>" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="?aksi=hapus&id=<?php echo $row['id_makanan']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Yakin ingin menghapus data ini?')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <?php 
+                                    endwhile; 
+                                else: 
+                                ?>
+                                <tr>
+                                    <td colspan="9" class="text-center">Tidak ada data</td>
+                                </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
                     
                     <!-- Pagination -->
                     <nav aria-label="Page navigation">
