@@ -259,19 +259,12 @@ $kategori = $conn->query($sql);
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
-        .sidebar {
+          .sidebar {
             min-height: calc(100vh - 56px);
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
-        .sidebar .nav-link {
-            padding: 10px 15px;
-            font-size: 16px;
-            color: #333;
-        }
-        .sidebar .nav-link:hover {
-            background-color: #f8f9fa;
-            color: #0d6efd;
-        }
+     
+        
         .nav-link {
             border-radius: 5px;
             margin-bottom: 5px;
