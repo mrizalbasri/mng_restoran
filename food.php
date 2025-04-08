@@ -1,17 +1,18 @@
 <?php
 // Konfigurasi koneksi database
-$host = "localhost";
-$username = "root";
-$password = "";
-$database = "db_restoran";
+require "database.php";
 
-// Membuat koneksi
-$conn = new mysqli($host, $username, $password, $database);
 
-// Mengecek koneksi
-if ($conn->connect_error) {
-    die("Koneksi gagal: " . $conn->connect_error);
+// Start this at the very top of your file, before anything else
+session_start();
+
+// Then check if the session variables exist before using them
+if (!isset($_SESSION['user_id'])) {
+    // If not logged in, redirect to login page
+    header("Location: login.php");
+    exit;
 }
+
 
 // Inisialisasi variabel
 $id_makanan = "";
@@ -25,7 +26,7 @@ $harga = "";
 $harga_diskon = "";
 $pesan = "";
 $pesan_error = "";
-$mode = "tambah";
+$mode = "list"; // Default tampilan daftar
 
 // Fungsi untuk membersihkan input
 function bersihkan_input($data) {
@@ -33,6 +34,51 @@ function bersihkan_input($data) {
     $data = stripslashes($data);
     $data = htmlspecialchars($data);
     return $data;
+}
+
+// Tentukan mode tampilan
+if (isset($_GET['mode'])) {
+    $mode = $_GET['mode'];
+    
+    if ($mode == 'tambah') {
+        // Mode tambah data
+        $action_mode = 'tambah';
+    } elseif ($mode == 'edit' && isset($_GET['id'])) {
+        // Mode edit data
+        $action_mode = 'edit';
+        $id_makanan = bersihkan_input($_GET['id']);
+        
+        // Ambil data makanan
+        $sql = "SELECT m.*, h.harga, h.harga_diskon 
+                FROM makanan m 
+                LEFT JOIN harga h ON h.jenis='makanan' AND h.id_produk=m.id_makanan
+                AND (h.tanggal_selesai IS NULL OR h.tanggal_selesai >= CURDATE())
+                WHERE m.id_makanan = ? 
+                ORDER BY h.tanggal_mulai DESC 
+                LIMIT 1";
+        
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $id_makanan);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            $nama_makanan = $row['nama_makanan'];
+            $id_kategori = $row['id_kategori'];
+            $deskripsi = $row['deskripsi'];
+            $bahan_utama = $row['bahan_utama'];
+            $waktu_persiapan = $row['waktu_persiapan'];
+            $status_ketersediaan = $row['status_ketersediaan'];
+            $harga = $row['harga'];
+            $harga_diskon = $row['harga_diskon'];
+        }
+    } else {
+        // Default ke mode list
+        $mode = 'list';
+    }
+} else {
+    $mode = 'list';
 }
 
 // Proses form submit
@@ -52,6 +98,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // Validasi input
             if (empty($nama_makanan) || empty($id_kategori) || empty($harga)) {
                 $pesan_error = "Nama Makanan, Kategori, dan Harga harus diisi!";
+                $mode = isset($_POST['source_mode']) ? $_POST['source_mode'] : 'tambah'; // Tetap di mode yang sama
             } else {
                 // Mulai transaksi
                 $conn->begin_transaction();
@@ -71,19 +118,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $conn->commit();
                     $pesan = "Data makanan berhasil ditambahkan!";
                     
-                    // Reset form
-                    $nama_makanan = "";
-                    $id_kategori = "";
-                    $deskripsi = "";
-                    $bahan_utama = "";
-                    $waktu_persiapan = "";
-                    $status_ketersediaan = 1;
-                    $harga = "";
-                    $harga_diskon = "";
+                    // Redirect ke mode list setelah berhasil
+                    header("Location: food.php?pesan=" . urlencode($pesan));
+                    exit;
                 } catch (Exception $e) {
                     // Rollback jika terjadi kesalahan
                     $conn->rollback();
                     $pesan_error = "Error: " . $e->getMessage();
+                    $mode = isset($_POST['source_mode']) ? $_POST['source_mode'] : 'tambah'; // Tetap di mode yang sama
                 }
             }
         }
@@ -103,6 +145,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // Validasi input
             if (empty($nama_makanan) || empty($id_kategori) || empty($harga)) {
                 $pesan_error = "Nama Makanan, Kategori, dan Harga harus diisi!";
+                $mode = 'edit'; // Tetap di mode edit
             } else {
                 // Mulai transaksi
                 $conn->begin_transaction();
@@ -137,114 +180,89 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     // Commit transaksi
                     $conn->commit();
                     $pesan = "Data makanan berhasil diperbarui!";
-                    $mode = "tambah"; // Kembali ke mode tambah
                     
-                    // Reset form
-                    $id_makanan = "";
-                    $nama_makanan = "";
-                    $id_kategori = "";
-                    $deskripsi = "";
-                    $bahan_utama = "";
-                    $waktu_persiapan = "";
-                    $status_ketersediaan = 1;
-                    $harga = "";
-                    $harga_diskon = "";
+                    // Redirect ke mode list setelah berhasil
+                    header("Location: food.php?pesan=" . urlencode($pesan));
+                    exit;
                 } catch (Exception $e) {
                     // Rollback jika terjadi kesalahan
                     $conn->rollback();
                     $pesan_error = "Error: " . $e->getMessage();
+                    $mode = 'edit'; // Tetap di mode edit
                 }
             }
         }
     }
 }
 
-// Proses aksi dari tabel (edit/hapus)
-if (isset($_GET['aksi'])) {
-    if ($_GET['aksi'] == 'edit' && isset($_GET['id'])) {
-        $id_makanan = bersihkan_input($_GET['id']);
-        $mode = "edit";
-        
-        // Ambil data makanan
-        $sql = "SELECT m.*, h.harga, h.harga_diskon 
-                FROM makanan m 
-                LEFT JOIN harga h ON h.jenis='makanan' AND h.id_produk=m.id_makanan
-                AND (h.tanggal_selesai IS NULL OR h.tanggal_selesai >= CURDATE())
-                WHERE m.id_makanan = ? 
-                ORDER BY h.tanggal_mulai DESC 
-                LIMIT 1";
-        
-        $stmt = $conn->prepare($sql);
+// Proses aksi hapus
+if (isset($_GET['aksi']) && $_GET['aksi'] == 'hapus' && isset($_GET['id'])) {
+    $id_makanan = bersihkan_input($_GET['id']);
+    
+    // Mulai transaksi
+    $conn->begin_transaction();
+    try {
+        // Set harga saat ini berakhir
+        $stmt = $conn->prepare("UPDATE harga SET tanggal_selesai = CURDATE() WHERE jenis='makanan' AND id_produk=? AND tanggal_selesai IS NULL");
         $stmt->bind_param("i", $id_makanan);
         $stmt->execute();
-        $result = $stmt->get_result();
         
-        if ($result->num_rows > 0) {
-            $row = $result->fetch_assoc();
-            $nama_makanan = $row['nama_makanan'];
-            $id_kategori = $row['id_kategori'];
-            $deskripsi = $row['deskripsi'];
-            $bahan_utama = $row['bahan_utama'];
-            $waktu_persiapan = $row['waktu_persiapan'];
-            $status_ketersediaan = $row['status_ketersediaan'];
-            $harga = $row['harga'];
-            $harga_diskon = $row['harga_diskon'];
-        }
-    } elseif ($_GET['aksi'] == 'hapus' && isset($_GET['id'])) {
-        $id_makanan = bersihkan_input($_GET['id']);
+        // Hapus data makanan
+        $stmt = $conn->prepare("DELETE FROM makanan WHERE id_makanan=?");
+        $stmt->bind_param("i", $id_makanan);
+        $stmt->execute();
         
-        // Mulai transaksi
-        $conn->begin_transaction();
-        try {
-            // Set harga saat ini berakhir
-            $stmt = $conn->prepare("UPDATE harga SET tanggal_selesai = CURDATE() WHERE jenis='makanan' AND id_produk=? AND tanggal_selesai IS NULL");
-            $stmt->bind_param("i", $id_makanan);
-            $stmt->execute();
-            
-            // Hapus data makanan (atau bisa juga hanya mengupdate status, tidak benar-benar menghapus)
-            $stmt = $conn->prepare("DELETE FROM makanan WHERE id_makanan=?");
-            $stmt->bind_param("i", $id_makanan);
-            $stmt->execute();
-            
-            // Commit transaksi
-            $conn->commit();
-            $pesan = "Data makanan berhasil dihapus!";
-        } catch (Exception $e) {
-            // Rollback jika terjadi kesalahan
-            $conn->rollback();
-            $pesan_error = "Error: " . $e->getMessage();
-        }
+        // Commit transaksi
+        $conn->commit();
+        $pesan = "Data makanan berhasil dihapus!";
+        
+        // Redirect kembali ke halaman utama
+        header("Location: food.php?pesan=" . urlencode($pesan));
+        exit;
+    } catch (Exception $e) {
+        // Rollback jika terjadi kesalahan
+        $conn->rollback();
+        $pesan_error = "Error: " . $e->getMessage();
     }
 }
 
-// Pagination
-$batas = 10;
-$halaman = isset($_GET["halaman"]) ? (int)$_GET["halaman"] : 1;
-$halaman_awal = ($halaman > 1) ? ($halaman * $batas) - $batas : 0;
+// Ambil pesan dari URL jika ada
+if (isset($_GET['pesan'])) {
+    $pesan = $_GET['pesan'];
+}
 
-$previous = $halaman - 1;
-$next = $halaman + 1;
+// Pagination (hanya untuk mode list)
+if ($mode == 'list') {
+    $batas = 10;
+    $halaman = isset($_GET["halaman"]) ? (int)$_GET["halaman"] : 1;
+    $halaman_awal = ($halaman > 1) ? ($halaman * $batas) - $batas : 0;
 
-$sql = "SELECT COUNT(*) as total FROM makanan";
-$result = $conn->query($sql);
-$row = $result->fetch_assoc();
-$jumlah_data = $row['total'];
-$total_halaman = ceil($jumlah_data / $batas);
+    $previous = $halaman - 1;
+    $next = $halaman + 1;
 
-// Mengambil data untuk tabel dengan pagination
-$sql = "SELECT m.id_makanan, m.nama_makanan, k.nama_kategori, m.bahan_utama, 
-        m.deskripsi, m.waktu_persiapan, m.status_ketersediaan, h.harga, h.harga_diskon
-        FROM makanan m
-        JOIN kategori k ON m.id_kategori = k.id_kategori
-        LEFT JOIN harga h ON h.jenis='makanan' AND h.id_produk=m.id_makanan
-        AND (h.tanggal_selesai IS NULL OR h.tanggal_selesai >= CURDATE())
-        ORDER BY m.id_makanan DESC
-        LIMIT $halaman_awal, $batas";
-$data_makanan = $conn->query($sql);
+    $sql = "SELECT COUNT(*) as total FROM makanan";
+    $result = $conn->query($sql);
+    $row = $result->fetch_assoc();
+    $jumlah_data = $row['total'];
+    $total_halaman = ceil($jumlah_data / $batas);
 
-// Ambil data kategori untuk dropdown
-$sql = "SELECT id_kategori, nama_kategori FROM kategori WHERE jenis='makanan' ORDER BY nama_kategori";
-$kategori = $conn->query($sql);
+    // Mengambil data untuk tabel dengan pagination
+    $sql = "SELECT m.id_makanan, m.nama_makanan, k.nama_kategori, m.bahan_utama, 
+            m.deskripsi, m.waktu_persiapan, m.status_ketersediaan, h.harga, h.harga_diskon
+            FROM makanan m
+            JOIN kategori k ON m.id_kategori = k.id_kategori
+            LEFT JOIN harga h ON h.jenis='makanan' AND h.id_produk=m.id_makanan
+            AND (h.tanggal_selesai IS NULL OR h.tanggal_selesai >= CURDATE())
+            ORDER BY m.id_makanan DESC
+            LIMIT $halaman_awal, $batas";
+    $data_makanan = $conn->query($sql);
+}
+
+// Ambil data kategori untuk dropdown (untuk mode tambah dan edit)
+if ($mode == 'tambah' || $mode == 'edit') {
+    $sql = "SELECT id_kategori, nama_kategori FROM kategori WHERE jenis='makanan' ORDER BY nama_kategori";
+    $kategori = $conn->query($sql);
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -259,12 +277,10 @@ $kategori = $conn->query($sql);
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
-          .sidebar {
+        .sidebar {
             min-height: calc(100vh - 56px);
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
-     
-        
         .nav-link {
             border-radius: 5px;
             margin-bottom: 5px;
@@ -276,29 +292,44 @@ $kategori = $conn->query($sql);
         .nav-link:hover:not(.active) {
             background-color: #f8f9fa;
         }
-        .form-section {
-            background-color: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        .table-section {
+        .content-section {
             background-color: #ffffff;
             border-radius: 10px;
             padding: 20px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
         }
         .badge-available {
             background-color: #28a745;
             color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
         }
         .badge-unavailable {
             background-color: #dc3545;
             color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
         }
         .price-discount {
             text-decoration: line-through;
             color: #6c757d;
+        }
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .form-section {
+            max-width: 800px;
+            margin: 0 auto;
         }
     </style>
 </head>
@@ -316,25 +347,22 @@ $kategori = $conn->query($sql);
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link active" href="index.php">
-                            <i class="bi bi-speedometer2 me-1"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
                         <a class="nav-link" href="orders.php">
                             <i class="bi bi-cart-fill me-1"></i> Pemesanan
                         </a>
                     </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-person-circle me-1"></i> Admin
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-1"></i> Pengaturan</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-box-arrow-right me-1"></i> Logout</a></li>
-                        </ul>
-                    </li>
+
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+        <i class="bi bi-person-circle me-1"></i> 
+        <?php echo isset($_SESSION['role']) ? $_SESSION['role'] : 'Guest'; ?>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end">
+        <li><a class="dropdown-item" href="profile.php"><i class="bi bi-gear me-1"></i> Pengaturan</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="logout.php"><i class="bi bi-box-arrow-right me-1"></i> Logout</a></li>
+    </ul>
+</li>
                 </ul>
             </div>
         </div>
@@ -366,11 +394,6 @@ $kategori = $conn->query($sql);
                                 <i class="bi bi-tags me-2"></i> Harga
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href="orders.php" class="nav-link text-dark">
-                                <i class="bi bi-cart me-2"></i> Pemesanan
-                            </a>
-                        </li>
                     </ul>
                     <hr>
                 </div>
@@ -378,10 +401,7 @@ $kategori = $conn->query($sql);
             
             <!-- Main Content -->
             <div class="col-lg-10 px-4 py-3">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2>Manajemen Menu Makanan</h2>
-                </div>
-                
+
                 <!-- Alert Messages -->
                 <?php if(!empty($pesan)): ?>
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -397,105 +417,36 @@ $kategori = $conn->query($sql);
                 </div>
                 <?php endif; ?>
                 
-                <!-- Form Section -->
-                <div class="form-section">
-                    <h4><?php echo ($mode == 'edit') ? 'Edit' : 'Tambah'; ?> Menu Makanan</h4>
-                    <form method="post" action="">
-                        <input type="hidden" name="aksi" value="<?php echo $mode; ?>">
-                        <?php if($mode == 'edit'): ?>
-                        <input type="hidden" name="id_makanan" value="<?php echo $id_makanan; ?>">
-                        <?php endif; ?>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="nama_makanan" class="form-label">Nama Makanan*</label>
-                                <input type="text" class="form-control" id="nama_makanan" name="nama_makanan" value="<?php echo $nama_makanan; ?>" required>
+                <?php if($mode == 'list'): ?>
+                <!-- LIST MODE -->
+                <div class="content-header">
+                        <h2><i class="bi bi-egg-fried me-2"></i> Daftar Menu Makanan</h2>
+                        <a href="?mode=tambah" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i> Tambah Makanan Baru
+                        </a>
+                    </div>
+                <div class="content-section">
+                   
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4 ms-auto">
+                            <div class="input-group">
+                                <input type="text" class="form-control" placeholder="Cari makanan..." id="searchInput">
+                                <button class="btn btn-outline-secondary" type="button">
+                                    <i class="fas fa-search"></i>
+                                </button>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="id_kategori" class="form-label">Kategori*</label>
-                                <select class="form-select" id="id_kategori" name="id_kategori" required>
-                                    <option value="">Pilih Kategori</option>
-                                    <?php while($row = $kategori->fetch_assoc()): ?>
-                                    <option value="<?php echo $row['id_kategori']; ?>" <?php if($id_kategori == $row['id_kategori']) echo 'selected'; ?>>
-                                        <?php echo $row['nama_kategori']; ?>
-                                    </option>
-                                    <?php endwhile; ?>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="bahan_utama" class="form-label">Bahan Utama</label>
-                                <input type="text" class="form-control" id="bahan_utama" name="bahan_utama" value="<?php echo $bahan_utama; ?>">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="waktu_persiapan" class="form-label">Waktu Persiapan (menit)</label>
-                                <input type="number" class="form-control" id="waktu_persiapan" name="waktu_persiapan" value="<?php echo $waktu_persiapan; ?>">
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="harga" class="form-label">Harga*</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Rp</span>
-                                    <input type="number" class="form-control" id="harga" name="harga" value="<?php echo $harga; ?>" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="harga_diskon" class="form-label">Harga Diskon</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Rp</span>
-                                    <input type="number" class="form-control" id="harga_diskon" name="harga_diskon" value="<?php echo $harga_diskon; ?>">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="deskripsi" class="form-label">Deskripsi</label>
-                            <textarea class="form-control" id="deskripsi" name="deskripsi" rows="3"><?php echo $deskripsi; ?></textarea>
-                        </div>
-                        
-                        <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="status_ketersediaan" name="status_ketersediaan" <?php if($status_ketersediaan) echo 'checked'; ?>>
-                            <label class="form-check-label" for="status_ketersediaan">Tersedia</label>
-                        </div>
-                        
-                        <div class="d-flex justify-content-between">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> <?php echo ($mode == 'edit') ? 'Update' : 'Simpan'; ?>
-                            </button>
-                            <?php if($mode == 'edit'): ?>
-                            <a href="?aksi=batal" class="btn btn-secondary">
-                                <i class="fas fa-times"></i> Batal
-                            </a>
-                            <?php endif; ?>
-                        </div>
-                    </form>
-                </div>
-                
-                <!-- Table Section -->
-                <div class="table-section">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4>Daftar Menu Makanan</h4>
-                        <div class="input-group" style="width: 300px;">
-                            <input type="text" class="form-control" placeholder="Cari..." id="searchInput">
-                            <button class="btn btn-outline-secondary" type="button">
-                                <i class="fas fa-search"></i>
-                            </button>
                         </div>
                     </div>
                     
                     <div class="table-responsive">
                         <table class="table table-striped table-hover">
-                            <thead>
+                            <thead class="table-light">
                                 <tr>
                                     <th>No</th>
                                     <th>Nama Makanan</th>
                                     <th>Kategori</th>
                                     <th>Bahan Utama</th>
-                                    <th>Deskripsi</th>
                                     <th>Waktu</th>
                                     <th>Harga</th>
                                     <th>Status</th>
@@ -510,17 +461,21 @@ $kategori = $conn->query($sql);
                                 ?>
                                 <tr>
                                     <td><?php echo $no++; ?></td>
-                                    <td><?php echo $row['nama_makanan']; ?></td>
+                                    <td>
+                                        <strong><?php echo $row['nama_makanan']; ?></strong>
+                                        <?php if(!empty($row['deskripsi'])): ?>
+                                        <br><small class="text-muted"><?php echo (strlen($row['deskripsi']) > 50) ? substr($row['deskripsi'], 0, 50).'...' : $row['deskripsi']; ?></small>
+                                        <?php endif; ?>
+                                    </td>
                                     <td><?php echo $row['nama_kategori']; ?></td>
                                     <td><?php echo $row['bahan_utama']; ?></td>
-                                    <td><?php echo !empty($row['deskripsi']) ? (strlen($row['deskripsi']) > 50 ? substr($row['deskripsi'], 0, 50).'...' : $row['deskripsi']) : '-'; ?></td>
                                     <td><?php echo $row['waktu_persiapan']; ?> menit</td>
                                     <td>
                                         <?php if($row['harga_diskon']): ?>
                                             <span class="price-discount">Rp <?php echo number_format($row['harga'], 0, ',', '.'); ?></span><br>
-                                            Rp <?php echo number_format($row['harga_diskon'], 0, ',', '.'); ?>
+                                            <strong>Rp <?php echo number_format($row['harga_diskon'], 0, ',', '.'); ?></strong>
                                         <?php else: ?>
-                                            Rp <?php echo number_format($row['harga'], 0, ',', '.'); ?>
+                                            <strong>Rp <?php echo number_format($row['harga'], 0, ',', '.'); ?></strong>
                                         <?php endif; ?>
                                     </td>
                                     <td>
@@ -531,12 +486,17 @@ $kategori = $conn->query($sql);
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <a href="?aksi=edit&id=<?php echo $row['id_makanan']; ?>" class="btn btn-sm btn-warning">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <a href="?aksi=hapus&id=<?php echo $row['id_makanan']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Yakin ingin menghapus data ini?')">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
+                                        <div class="action-buttons">
+                                            <a href="?mode=edit&id=<?php echo $row['id_makanan']; ?>" class="btn btn-sm btn-warning" data-bs-toggle="tooltip" title="Edit">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </a>
+                                            <a href="?aksi=hapus&id=<?php echo $row['id_makanan']; ?>" 
+                                               class="btn btn-sm btn-danger" 
+                                               onclick="return confirm('Yakin ingin menghapus <?php echo $row['nama_makanan']; ?>?')"
+                                               data-bs-toggle="tooltip" title="Hapus">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                                 <?php 
@@ -544,7 +504,13 @@ $kategori = $conn->query($sql);
                                 else: 
                                 ?>
                                 <tr>
-                                    <td colspan="9" class="text-center">Tidak ada data</td>
+                                    <td colspan="8" class="text-center py-4">
+                                        <div class="text-muted">
+                                            <i class="bi bi-info-circle me-2 fs-4"></i>
+                                            <p>Tidak ada data makanan tersedia</p>
+                                            <a href="?mode=tambah" class="btn btn-primary btn-sm">Tambah Makanan Sekarang</a>
+                                        </div>
+                                    </td>
                                 </tr>
                                 <?php endif; ?>
                             </tbody>
@@ -552,6 +518,7 @@ $kategori = $conn->query($sql);
                     </div>
                     
                     <!-- Pagination -->
+                    <?php if($total_halaman > 1): ?>
                     <nav aria-label="Page navigation">
                         <ul class="pagination justify-content-center">
                             <li class="page-item <?php if($halaman <= 1) echo 'disabled'; ?>">
@@ -571,34 +538,115 @@ $kategori = $conn->query($sql);
                             </li>
                         </ul>
                     </nav>
+                    <?php endif; ?>
+                </div>
+                
+                <?php elseif($mode == 'tambah' || $mode == 'edit'): ?>
+                <!-- FORM MODE (TAMBAH/EDIT) -->
+                <div class="content-section">
+                    <div class="content-header mb-4">
+                        <h2><?php echo ($mode == 'edit') ? 'Edit Menu Makanan' : 'Tambah Menu Makanan Baru'; ?></h2>
+                        <a href="food.php" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar
+                        </a>
+                    </div>
+                    
+                    <div class="form-section">
+                        <form method="post" action="">
+                            <input type="hidden" name="aksi" value="<?php echo ($mode == 'edit') ? 'edit' : 'tambah'; ?>">
+                            <input type="hidden" name="source_mode" value="<?php echo $mode; ?>">
+                            
+                            <?php if($mode == 'edit'): ?>
+                            <input type="hidden" name="id_makanan" value="<?php echo $id_makanan; ?>">
+                            <?php endif; ?>
+                            
+                            <div class="row mb-4">
+                                <div class="col-12 mb-4">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-primary text-white">
+                                            <h5 class="mb-0">Informasi Dasar</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="nama_makanan" class="form-label fw-bold">Nama Makanan*</label>
+                                                    <input type="text" class="form-control" id="nama_makanan" name="nama_makanan" value="<?php echo $nama_makanan; ?>" required>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="id_kategori" class="form-label fw-bold">Kategori*</label>
+                                                    <select class="form-select" id="id_kategori" name="id_kategori" required>
+                                                        <option value="">Pilih Kategori</option>
+                                                        <?php while($row = $kategori->fetch_assoc()): ?>
+                                                        <option value="<?php echo $row['id_kategori']; ?>" <?php if($id_kategori == $row['id_kategori']) echo 'selected'; ?>>
+                                                            <?php echo $row['nama_kategori']; ?>
+                                                        </option>
+                                                        <?php endwhile; ?>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="deskripsi" class="form-label fw-bold">Deskripsi</label>
+                                                <textarea class="form-control" id="deskripsi" name="deskripsi" rows="3" placeholder="Tuliskan deskripsi singkat tentang makanan ini"><?php echo $deskripsi; ?></textarea>
+                                                        </div><div class="row">
+    <div class="col-md-6 mb-3">
+        <label for="bahan_utama" class="form-label fw-bold">Bahan Utama</label>
+        <input type="text" class="form-control" id="bahan_utama" name="bahan_utama" value="<?php echo $bahan_utama; ?>">
+    </div>
+    <div class="col-md-6 mb-3">
+        <label for="waktu_persiapan" class="form-label fw-bold">Waktu Persiapan (menit)</label>
+        <input type="number" class="form-control" id="waktu_persiapan" name="waktu_persiapan" value="<?php echo $waktu_persiapan; ?>">
+    </div>
+</div>
+
+<div class="form-check mb-3">
+    <input class="form-check-input" type="checkbox" id="status_ketersediaan" name="status_ketersediaan" <?php if($status_ketersediaan) echo 'checked'; ?>>
+    <label class="form-check-label" for="status_ketersediaan">
+        Tersedia
+    </label>
+</div>
+</div>
+</div>
+
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Informasi Harga</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="harga" class="form-label fw-bold">Harga Reguler*</label>
+                <div class="input-group">
+                    <span class="input-group-text">Rp</span>
+                    <input type="number" class="form-control" id="harga" name="harga" value="<?php echo $harga; ?>" required>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="harga_diskon" class="form-label fw-bold">Harga Diskon <small class="text-muted">(opsional)</small></label>
+                <div class="input-group">
+                    <span class="input-group-text">Rp</span>
+                    <input type="number" class="form-control" id="harga_diskon" name="harga_diskon" value="<?php echo $harga_diskon; ?>">
                 </div>
             </div>
         </div>
     </div>
-    
-    <!-- Bootstrap JS dan Popper.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
-    
-    <!-- Script untuk pencarian -->
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const searchInput = document.getElementById('searchInput');
-        const tableRows = document.querySelectorAll('tbody tr');
-        
-        searchInput.addEventListener('keyup', function() {
-            const searchText = searchInput.value.toLowerCase();
-            
-            tableRows.forEach(row => {
-                const rowText = row.textContent.toLowerCase();
-                if (rowText.includes(searchText)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        });
-    });
-    </script>
+</div>
+
+<div class="d-flex justify-content-between mt-4">
+    <a href="food.php" class="btn btn-outline-secondary">Batal</a>
+    <button type="submit" class="btn btn-success">
+        <i class="bi bi-save me-1"></i> <?php echo ($mode == 'edit') ? 'Simpan Perubahan' : 'Simpan Data Baru'; ?>
+    </button>
+</div>
+</form>
+</div>
+</div>
+<?php endif; ?>
+</div>
+</div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

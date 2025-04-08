@@ -1,18 +1,17 @@
 <?php
 // Database connection
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "db_restoran";
+require "database.php";
 
-// Create connection
-$conn = new mysqli($servername, $username, $password, $dbname);
 
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+// Start this at the very top of your file, before anything else
+session_start();
+
+// Then check if the session variables exist before using them
+if (!isset($_SESSION['user_id'])) {
+    // If not logged in, redirect to login page
+    header("Location: login.php");
+    exit;
 }
-
 // Initialize variables
 $edit_id = "";
 $edit_nama = "";
@@ -156,27 +155,24 @@ if ($kategori_result && $kategori_result->num_rows > 0) {
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link active" href="index.php">
-                            <i class="bi bi-speedometer2 me-1"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
                         <a class="nav-link" href="orders.php">
                             <i class="bi bi-cart-fill me-1"></i> Pemesanan
                         </a>
                     </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-person-circle me-1"></i> Admin
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-1"></i> Pengaturan</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-box-arrow-right me-1"></i> Logout</a></li>
-                        </ul>
-                    </li>
+
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+        <i class="bi bi-person-circle me-1"></i> 
+        <?php echo isset($_SESSION['role']) ? $_SESSION['role'] : 'Guest'; ?>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end">
+        <li><a class="dropdown-item" href="profile.php"><i class="bi bi-gear me-1"></i> Pengaturan</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="logout.php"><i class="bi bi-box-arrow-right me-1"></i> Logout</a></li>
+    </ul>
+</li>
                 </ul>
-            </div>
+            </div>  
         </div>
     </nav>
 
@@ -204,11 +200,6 @@ if ($kategori_result && $kategori_result->num_rows > 0) {
                         <li class="nav-item">
                             <a href="prices.php" class="nav-link text-dark">
                                 <i class="bi bi-tags me-2"></i> Harga
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="orders.php" class="nav-link text-dark">
-                                <i class="bi bi-cart me-2"></i> Pemesanan
                             </a>
                         </li>
                     </ul>
