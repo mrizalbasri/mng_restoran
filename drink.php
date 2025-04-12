@@ -128,91 +128,153 @@ if ($kategori_result && $kategori_result->num_rows > 0) {
         .menu-card {
             cursor: pointer;
         }
-        .nav-link {
-            border-radius: 5px;
-            margin-bottom: 5px;
-        }
-        .nav-link.active {
-            background-color: #0d6efd;
-            color: white !important;
-        }
-        .nav-link:hover:not(.active) {
-            background-color: #f8f9fa;
-        }
+     /* Navbar Styles */
+.navbar {
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.navbar-brand {
+    font-size: 1.4rem;
+}
+
+.dropdown-menu {
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+    border-radius: 8px;
+}
+
+.dropdown-item {
+    border-radius: 5px;
+    transition: all 0.2s;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    transition: all 0.3s;
+}
+
+.sidebar .nav-link {
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    margin-bottom: 0.3rem;
+    transition: all 0.3s;
+    opacity: 0.8;
+}
+
+.sidebar .nav-link:hover {
+    opacity: 1;
+    background-color: rgba(255,255,255,0.1);
+    transform: translateX(5px);
+}
+
+.sidebar .nav-link.active {
+    background-color: #ffc107;
+    color: #212529 !important;
+    opacity: 1;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.sidebar .nav-link i {
+    font-size: 1.2rem;
+}
     </style>
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="index.php">
-                <i class="bi bi-cup-hot-fill me-2"></i>
-                Restoran Dashboard
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="orders.php">
-                            <i class="bi bi-cart-fill me-1"></i> Pemesanan
-                        </a>
-                    </li>
-
-<li class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-        <i class="bi bi-person-circle me-1"></i> 
-        <?php echo isset($_SESSION['role']) ? $_SESSION['role'] : 'Guest'; ?>
-    </a>
-    <ul class="dropdown-menu dropdown-menu-end">
-        <li><a class="dropdown-item" href="profile.php"><i class="bi bi-gear me-1"></i> Pengaturan</a></li>
-        <li><hr class="dropdown-divider"></li>
-        <li><a class="dropdown-item" href="logout.php"><i class="bi bi-box-arrow-right me-1"></i> Logout</a></li>
-    </ul>
-</li>
-                </ul>
-            </div>  
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold d-flex align-items-center" href="index.php">
+            <i class="bi bi-cup-hot-fill me-2 text-warning"></i>
+            <span>KafeTech Admin</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto align-items-center">
+                <li class="nav-item">
+                    <a class="nav-link px-3 rounded-pill me-2" href="orders.php">
+                        <i class="bi bi-cart-fill me-1"></i> Pemesanan
+                        <span class="badge rounded-pill bg-danger">5</span>
+                    </a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle px-3 d-flex align-items-center" href="#" role="button" 
+                       data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-circle me-2 fs-5"></i> 
+                        <span><?php echo isset($_SESSION['role']) ? $_SESSION['role'] : 'Guest'; ?></span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                        <li><a class="dropdown-item py-2" href="profile.php">
+                            <i class="bi bi-gear me-2 text-secondary"></i> Pengaturan</a>
+                        </li>
+                        <li><hr class="dropdown-divider my-1"></li>
+                        <li><a class="dropdown-item py-2 text-danger" href="logout.php">
+                            <i class="bi bi-box-arrow-right me-2"></i> Logout</a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
         </div>
-    </nav>
-
+    </div>
+</nav>
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
-            <div class="col-lg-2 bg-light sidebar p-3">
-                <div class="d-flex flex-column">
-                    <ul class="nav nav-pills flex-column">
-                        <li class="nav-item">
-                            <a href="dashboard.php" class="nav-link text-dark">
-                                <i class="bi bi-house-door me-2"></i> Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="food.php" class="nav-link text-dark">
-                                <i class="bi bi-egg-fried me-2"></i> Makanan
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="drink.php" class="nav-link text-dark active">
-                                <i class="bi bi-cup-straw me-2"></i> Minuman
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="prices.php" class="nav-link text-dark">
-                                <i class="bi bi-tags me-2"></i> Harga
-                            </a>
-                        </li>
-                    </ul>
-                    <hr>
-                </div>
+            <div class="col-lg-2 p-0">
+    <div class="sidebar bg-dark text-light h-100 p-3  d-flex flex-column">
+        <div class="p-3 border-bottom border-secondary">
+            <div class="d-flex align-items-center">
+                <span class="fs-5 fw-semibold text-warning">Dashboard Menu</span>
             </div>
+        </div>
+        
+        <ul class="nav nav-pills flex-column p-3 gap-2">
+            <li class="nav-item">
+                <a href="food.php" class="nav-link text-light d-flex align-items-center">
+                    <i class="bi bi-egg-fried me-3"></i>
+                    <span>Makanan</span>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="drink.php" class="nav-link text-light active d-flex align-items-center">
+                    <i class="bi bi-cup-straw me-3"></i>
+                    <span>Minuman</span>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="prices.php" class="nav-link text-light d-flex align-items-center">
+                    <i class="bi bi-tags me-3"></i>
+                    <span>Harga</span>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="reports.php" class="nav-link text-light d-flex align-items-center">
+                    <i class="bi bi-bar-chart-line me-3"></i>
+                    <span>Laporan</span>
+                </a>
+            </li>
+        </ul>
+        
+    </div>
+</div>
             
             <!-- Main Content -->
             <div class="col-lg-10 p-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2><i class="bi bi-cup-straw me-2"></i>Manajemen Minuman</h2>
                     <?php if ($action != "edit"): ?>
-                    <a href="drink.php?action=add" class="btn btn-primary">
+                    <a href="drink.php?action=add" class="btn btn-warning">
                         <i class="bi bi-plus-circle me-2"></i>Tambah Minuman
                     </a>
                     <?php endif; ?>
@@ -280,7 +342,7 @@ if ($kategori_result && $kategori_result->num_rows > 0) {
                             
                             <div class="d-flex justify-content-between">
                                 <a href="drink.php" class="btn btn-secondary">Batal</a>
-                                <button type="submit" name="submit" class="btn btn-primary"><?php echo $action == "edit" ? "Update" : "Simpan"; ?></button>
+                                <button type="submit" name="submit" class="btn btn-warning"><?php echo $action == "edit" ? "Update" : "Simpan"; ?></button>
                             </div>
                         </form>
                     </div>
@@ -312,7 +374,7 @@ if ($kategori_result && $kategori_result->num_rows > 0) {
                                     </select>
                                 </div>
                                 <div class="col-auto">
-                                    <button type="submit" class="btn btn-primary">Filter</button>
+                                    <button type="submit" class="btn btn-warning">Filter</button>
                                 </div>
                                 <div class="col-auto">
                                     <a href="drink.php" class="btn btn-secondary">Reset</a>
